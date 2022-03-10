@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATI Kurunegala | Excel, CSV to PDF Converter</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+    <script src="https://kit.fontawesome.com/a841b8cb9a.js" crossorigin="anonymous"></script>
+    <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+  />
+</head>
+<body style="padding: 20px;">
+    <div class="container" style="margin: auto; text-align: center;">
+        <div>
+            <h1 class="title is-1" style="color: brown;">CSV/Excel to PDF Converter</h1>
+            <h2>Advanced Technological Institute Kurunegala</h2>
+            <hr>
+            <h2 class="title is-3">Upload a file and convert now!</h2>
+        </div>
+        
+        <div class="file is-medium is-boxed has-name animate__animated animate__bounceIn" style="display: flex; align-items: center; justify-content: center; margin: 20px;">
+            <label class="file-label ">
+              <input class="file-input" type="file" name="resume" id="fileUpload" onchange="handleFileChange(this)" accept=".csv,.xls,.xlsx">
+              <span class="file-cta">
+                <span class="file-icon">
+                  <i class="fas fa-upload"></i>
+                </span>
+                <span class="file-label" id="file-label">
+                  Upload File
+                </span>
+              </span>
+              <span class="file-name" id="file-name">
+                 CSV/XLS
+              </span>
+            </label>
+            <input class = "button is-danger animate__animated animate__bounceIn" type="button" id="upload" value="GENERATE" style="margin: 20px; display: none;"/>
+          </div>
+          <div style="display: flex; justify-content: space-around;">
+            <button class = "button is-primary animate__animated animate__fadeInUp" style="display: none;" onclick="generate('portrait')" id="btn1"> DOWNLOAD PDF (Potrait) </button>
+            <button class = "button is-info animate__animated animate__fadeInUp" style="display: none;" onclick="generate('landscape')" id="btn2"> DOWNLOAD PDF (Landscape) </button>    
+          </div>
+          <hr>
+          <div class="table-container animate__animated animate__fadeInUp" style="max-height: 900px; overflow: scroll;">
+            <table class="table">
+                <div id="dvExcel" class="animate__animated animate__fadeInUp"></div>
+            </table>
+          </div>
+        <hr />
+      </div>
+
+      <footer class="footer" >
+        <div class="content has-text-centered">
+          <p>
+            <strong>Developed</strong> by Thanish Ahamed. Copyright @ ATI Kurunegala.
+          </p>
+        </div>
+      </footer>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.5/xlsx.full.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.5/jszip.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.min.js"></script>
+    <script type="text/javascript">
+        let readData = [];
+        $("body").on("click", "#upload", function () {
+            readData = [];
+            //Reference the FileUpload element.
+            var fileUpload = $("#fileUpload")[0];
+
+            //Validate whether File is valid Excel file.
+            // var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.xls|.xlsx)$/;
+            // if (regex.test(fileUpload.value.toLowerCase())) {
+            if (fileUpload.value) {
+                if (typeof (FileReader) != "undefined") {
+                    var reader = new FileReader();
+    
+                    //For Browsers other than IE.
+                    if (reader.readAsBinaryString) {
+                        reader.onload = function (e) {
+                            ProcessExcel(e.target.result);
+                        };
+                        reader.readAsBinaryString(fileUpload.files[0]);
+                    } else {
+                        //For IE Browser.
+                        reader.onload = function (e) {
+                            var data = "";
+                            var bytes = new Uint8Array(e.target.result);
+                            for (var i = 0; i < bytes.byteLength; i++) {
+                                data += String.fromCharCode(bytes[i]);
+                            }
+                            ProcessExcel(data);
+                        };
+                        reader.readAsArrayBuffer(fileUpload.files[0]);
+                    }
+                } else {
+                    alert("This browser does not support HTML5.");
+                }
+            } else {
+                alert("Please upload a valid Excel or CSV file.");
+            }
+        });
+        function ProcessExcel(data) {
+            //Read the Excel File data.
+            var workbook = XLSX.read(data, {
+                type: 'binary'
+            });
+    
+            //Fetch the name of First Sheet.
+            var firstSheet = workbook.SheetNames[0];
+    
+            //Read all rows from First Sheet into an JSON array.
+            var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[firstSheet]);
+    
+            //Create a HTML Table element.
+            var table = $("<table />");
+            table[0].id = "tbl";
+            table[0].border = "1";
+            table[0].cellSpacing = "0";
+    
+            //Add the header row.
+            var row = $(table[0].insertRow(-1));
+    
+        //Add the header cells.
+    
+            let obj = excelRows[0];
+            let cols = Object.keys({ID:"1", ...obj});
+
+            for(var j=0; j<cols.length; j++) {
+                var headerCell = $("<th />");
+                headerCell.html(cols[j]);
+                row.append(headerCell);
+            }
+
+            //Add the data rows from Excel file.
+            for (var i = 0; i < excelRows.length; i++) {
+                //Add the data row.
+                var row = $(table[0].insertRow(-1));
+                let obj = excelRows[i];
+                readData.push(obj);
+                const newRow = Object.values(obj);
+                //Add the data cells.
+                var cell = $("<td />");
+                cell.html(i+1);
+                row.append(cell);
+    
+                for(var k=0; k<newRow.length; k++) {
+                    cell = $("<td />");
+                    cell.html(newRow[k]);
+                    row.append(cell);
+                }
+            }
+    
+            var dvExcel = $("#dvExcel");
+            dvExcel.html("");
+            dvExcel.append(table);
+            // console.log(readData);
+
+            document.getElementById('btn1').style.display = 'block';
+            document.getElementById('btn2').style.display = 'block';
+
+        };
+        
+        var doc = new jsPDF();
+    var specialElementHandlers = {
+        '#editor': function (element, renderer) {
+            return true;
+        }
+    };
+
+
+    //download area
+    var doc = new jsPDF();
+    var specialElementHandlers = {
+        '#editor': function (element, renderer) {
+            return true;
+        }
+    };
+     
+     
+    function generate(orientation) {
+        var doc = new jspdf.jsPDF({orientation: orientation})
+
+        // Simple data example
+        // var head = [['S.N', 'Meeting ID', 'Topic', 'Start', 'End', 'Email', 'Mins', 'Count']]
+        var head = [Object.keys({ID:"1", ...readData[0]})];
+        var body = []; // format  [[1, 'ATI', 0, 'Kurunegala'], [1, 'ATI', 0, 'Kurunegala']],
+        for (var x = 0; x<readData.length; x++) {
+            let info = Object.values({ID:x+1, ...readData[x]});
+            // console.log(info);
+            body.push(info);
+        }
+        doc.autoTable({ head: head, body: body })
+
+        // Simple html example
+        // doc.autoTable({ html: '#tbl' })
+        doc.save('Conv_ATI_KUR.pdf')
+      }
+
+      function handleFileChange(f) {
+          document.getElementById('file-name').textContent =  "Uploaded!";
+          document.getElementById('upload').style.display = 'block';
+          document.getElementById('file-label').innerHTML =  "<h4 class='title is-4 title-color-red'>Click Generate!</h4>";
+      }
+      
+
+    </script>
+
+<script src="libs/jspdf.umd.js"></script>
+<script src="libs/jspdf.plugin.autotable.js"></script>
+</body>
+</html>
